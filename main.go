@@ -3,5 +3,10 @@ package main
 import "log"
 
 func main() {
-	log.Println("Hello Agazhi")
+	result := getHello("Agazhi")
+	log.Println(result)
+}
+
+func getHello(name string) string {
+	return "Hello " + name
 }
