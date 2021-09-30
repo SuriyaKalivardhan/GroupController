@@ -11,39 +11,39 @@ func TestHello(t *testing.T) {
 
 func TestSampleRequest(t *testing.T) {
 	request := getSampleRquest()
-	if request.id != "suriya" && request.target != 34 {
-		t.Fatalf("Unexpected result %s, %v", request.id, request.target)
+	if request.Id != "suriya" && request.Target != 34 {
+		t.Fatalf("Unexpected result %s, %v", request.Id, request.Target)
 	}
 
 	nextRequest := copyRequest(request)
-	nextRequest.id = "magi"
-	nextRequest.target = 31
+	nextRequest.Id = "magi"
+	nextRequest.Target = 31
 
-	if request.id != "suriya" || request.target != 34 {
-		t.Fatalf("Unexpected result %s, %v", request.id, request.target)
+	if request.Id != "suriya" || request.Target != 34 {
+		t.Fatalf("Unexpected result %s, %v", request.Id, request.Target)
 	}
 
-	if nextRequest.id != "magi" || nextRequest.target != 31 {
-		t.Fatalf("Unexpected result %s, %v", nextRequest.id, nextRequest.target)
+	if nextRequest.Id != "magi" || nextRequest.Target != 31 {
+		t.Fatalf("Unexpected result %s, %v", nextRequest.Id, nextRequest.Target)
 	}
 
 	pointerRequest := request
-	if request.id != "suriya" || request.target != 34 {
-		t.Fatalf("Unexpected result %s, %v", request.id, request.target)
+	if request.Id != "suriya" || request.Target != 34 {
+		t.Fatalf("Unexpected result %s, %v", request.Id, request.Target)
 	}
 
-	if pointerRequest.id != "suriya" || pointerRequest.target != 34 {
-		t.Fatalf("Unexpected result %s, %v", pointerRequest.id, pointerRequest.target)
+	if pointerRequest.Id != "suriya" || pointerRequest.Target != 34 {
+		t.Fatalf("Unexpected result %s, %v", pointerRequest.Id, pointerRequest.Target)
 	}
 
-	pointerRequest.id = "agazhi"
-	pointerRequest.target = 4
-	if request.id != "agazhi" || request.target != 4 {
-		t.Fatalf("Unexpected result %s, %v", request.id, request.target)
+	pointerRequest.Id = "agazhi"
+	pointerRequest.Target = 4
+	if request.Id != "agazhi" || request.Target != 4 {
+		t.Fatalf("Unexpected result %s, %v", request.Id, request.Target)
 	}
 
-	if pointerRequest.id != "agazhi" || pointerRequest.target != 4 {
-		t.Fatalf("Unexpected result %s, %v", pointerRequest.id, pointerRequest.target)
+	if pointerRequest.Id != "agazhi" || pointerRequest.Target != 4 {
+		t.Fatalf("Unexpected result %s, %v", pointerRequest.Id, pointerRequest.Target)
 	}
 
 }
