@@ -16,6 +16,11 @@ func main() {
 	result := getHello("Starting")
 	log.Println(result)
 
+	redisHost := "localhost:6379"
+	redisPasswd := ""
+	client := initRedis(redisHost, redisPasswd)
+	go monitorRedisKeys(client)
+
 	http.HandleFunc("/healthcheck", handleHealthcheck)
 	http.HandleFunc("/allocate", handleAllocate)
 	http.ListenAndServe(":5001", nil)
