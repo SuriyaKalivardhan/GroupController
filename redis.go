@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -17,22 +18,34 @@ func initRedis(host string, passwd string) *redis.Client {
 }
 
 func monitorRedisKeys(client *redis.Client) {
+	end := make(chan string)
+	go func() {
+		for i := 0; i < 10; i++ {
+			time.Sleep(5 * time.Second)
+			result := fmt.Sprintf("This is Complete %v", i)
+			end <- result
+		}
+	}()
+
 	for {
-		keys, err := client.Keys("*").Result()
-		if err != nil {
-			log.Printf("Unexpected error while Printing keys %v", err)
-		} else {
-			for _, key := range keys {
-				log.Printf("KEY is %v", key)
-				val, err := client.Get(key).Result()
-				log.Printf("KEY is %v", key)
-				if err != nil {
-					log.Printf("Unexpected error while Printing keys %v", err)
-				} else {
-					log.Printf("VALUE IS %v", val)
+		select {
+		case result := <-end:
+			log.Printf("This is complete %v", result)
+			//return
+		case <-time.After(1 * time.Second):
+			keys, err := client.Keys("*").Result()
+			if err != nil {
+				log.Printf("Unexpected error while Printing keys %v", err)
+			} else {
+				for _, key := range keys {
+					val, err := client.Get(key).Result()
+					if err != nil {
+						log.Printf("Unexpected error while Printing keys %v", err)
+					} else {
+						log.Printf("KEY: %v, VALUE: %v", key, val)
+					}
 				}
 			}
 		}
-		time.Sleep(5 * time.Second)
 	}
 }
