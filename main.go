@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"log"
+	"net/http"
+)
 
 type AllocateRequest struct {
 	id     string
@@ -8,8 +11,16 @@ type AllocateRequest struct {
 }
 
 func main() {
-	result := getHello("Agazhi")
+	result := getHello("Starting")
 	log.Println(result)
+
+	http.HandleFunc("/healthcheck", handleHealthcheck)
+	http.ListenAndServe(":5001", nil)
+}
+
+func handleHealthcheck(writer http.ResponseWriter, request *http.Request) {
+	log.Printf("Recived the request: %v", request.Method)
+	writer.Write([]byte("Okay"))
 }
 
 func getHello(name string) string {
