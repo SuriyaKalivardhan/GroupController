@@ -13,3 +13,11 @@ type BootChannelMessage struct {
 	ListenerChannel string `json:"listenerChannel"`
 	BindedClient    string `json:"client"`
 }
+
+type GroupControllerControlMessage struct {
+	Method          string `json:"method"`
+	ClientId        string `json:"id"`
+	RedisHost       string `json:"redisHost"`
+	RedisPassword   string `json:"redisPassword"`
+	RegisterChannel string `json:"registerChannel"`
+}

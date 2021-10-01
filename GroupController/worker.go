@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 
 	"github.com/go-redis/redis/v7"
@@ -44,10 +44,24 @@ func (w *worker) Register(request *AllocateRequest, redisClient *redis.Client) b
 		return false
 	}
 
-	clientsRedisFromWorker := initRedis(request.RedisHost, request.RedisPassword)
-	clientsRedisFromWorker.Publish(request.RegisterChannel, fmt.Sprintf("Publishing Register from %v targeting %v", w.id, request.Id))
+	controlMessage := GroupControllerControlMessage{
+		Method:          "Register",
+		ClientId:        request.Id,
+		RedisHost:       request.RedisHost,
+		RedisPassword:   request.RedisPassword,
+		RegisterChannel: request.RegisterChannel,
+	}
+	redisMessage, err := json.Marshal(&controlMessage)
 
-	redisClient.Publish(w.listenerChannel, fmt.Sprintf("Publishing Register from %v targeting %v", w.id, request.Id))
+	if err != nil {
+		log.Printf("Unexcepted exception while serializing %v", err)
+	}
+
+	//below two lines are needed, just for test purpose
+	// clientsRedisFromWorker := initRedis(request.RedisHost, request.RedisPassword)
+	// clientsRedisFromWorker.Publish(request.RegisterChannel, redisMessage)
+
+	redisClient.Publish(w.listenerChannel, redisMessage)
 	w.client = request.Id
 	return true
 }
@@ -58,10 +72,25 @@ func (w *worker) UnRegister(request *AllocateRequest, redisClient *redis.Client)
 		return false
 	}
 
-	clientsRedisFromWorker := initRedis(request.RedisHost, request.RedisPassword)
-	clientsRedisFromWorker.Publish(request.RegisterChannel, fmt.Sprintf("Publishing UnRegister from %v targeting %v", w.id, request.Id))
-	w.client = ""
+	controlMessage := GroupControllerControlMessage{
+		Method:          "UnRegister",
+		ClientId:        request.Id,
+		RedisHost:       request.RedisHost,
+		RedisPassword:   request.RedisPassword,
+		RegisterChannel: request.RegisterChannel,
+	}
 
-	redisClient.Publish(w.listenerChannel, fmt.Sprintf("Publishing UnRegister from %v targeting %v", w.id, request.Id))
+	redisMessage, err := json.Marshal(&controlMessage)
+
+	if err != nil {
+		log.Printf("Unexcepted exception while serializing %v", err)
+	}
+
+	//Below Three lines are not needed, just for debugging purpose
+	// clientsRedisFromWorker := initRedis(request.RedisHost, request.RedisPassword)
+	// clientsRedisFromWorker.Publish(request.RegisterChannel, redisMessage)
+	// w.client = ""
+
+	redisClient.Publish(w.listenerChannel, redisMessage)
 	return true
 }
