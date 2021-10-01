@@ -80,12 +80,12 @@ func (c *Controller) watchonWorkersListener() {
 }
 
 func (c *Controller) handleHealthcheck(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("Recived the request: %v", request.Method)
+	log.Printf("Received the healthcheck request: %v", request.Method)
 	writer.Write([]byte("Okay"))
 }
 
 func (c *Controller) handleAllocate(writer http.ResponseWriter, request *http.Request) {
-	log.Println("Recieved the request")
+	log.Println("Recieved the Allocate request")
 	var allocateRequest AllocateRequest
 	err := json.NewDecoder(request.Body).Decode(&allocateRequest)
 	if err != nil {
@@ -115,6 +115,7 @@ func (c *Controller) Allocate(request *AllocateRequest) bool {
 	diff := min(request.Target-len(currentWorkers), len(freeWorkers))
 
 	if diff >= 0 {
+		log.Printf("Allocating %v of %v for %v", diff, request.Target, request.Id)
 		newWorkers := freeWorkers[0:diff]
 		for _, worker := range newWorkers {
 			if worker.Register(request, c.redisClient) {
@@ -124,6 +125,7 @@ func (c *Controller) Allocate(request *AllocateRequest) bool {
 		return len(currentWorkers) == request.Target
 
 	} else if diff < 0 {
+		log.Printf("DeAllocating %v of %v for %v", diff, request.Target, request.Id)
 		removed := 0
 		removeWorkers := currentWorkers[0 : diff*-1]
 		for _, worker := range removeWorkers {

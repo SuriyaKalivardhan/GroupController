@@ -1,7 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -38,8 +42,37 @@ func (c *Corrector) correctnessWorker() {
 				}
 				if targetInt != count {
 					log.Printf("Request target %v while current count is %v", targetInt, count)
+					SubmitTarget(targetInt)
 				}
 			}
 		}
 	}
+}
+
+func SubmitTarget(target int) {
+	request := AllocateRequest{
+		Id:              "ContosoController",
+		Target:          target,
+		RedisHost:       "localhost:6388",
+		RedisPassword:   "",
+		RegisterChannel: ControllerBootChannel,
+	}
+
+	requestBytes, err := json.Marshal(request)
+
+	if err != nil {
+		log.Printf("Unexpected error while Serializing the request.. %v", err)
+	}
+
+	resp, err := http.Post("http://localhost:5001/allocate", "application/json", bytes.NewBuffer(requestBytes))
+
+	if err != nil {
+		log.Printf("Unexpected error while Sending POST request.. %v", err)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Unexpected error while reading Response body.. %v", err)
+	}
+	log.Printf("RECEIVED response %v", string(body))
 }
