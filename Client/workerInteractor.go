@@ -11,7 +11,7 @@ import (
 
 func NewWorkerInteractor(client *redis.Client, rootContext context.Context) (*WorkerInteractor, context.CancelFunc) {
 	controllerContext, cancelFunc := context.WithCancel(rootContext)
-	w := &WorkerInteractor{client, controllerContext, make(map[string]*worker), NewCorrector()}
+	w := &WorkerInteractor{client, controllerContext, make(map[string]*worker), NewCorrector(client)}
 	go w.workerWatcher()
 	return w, cancelFunc
 }
