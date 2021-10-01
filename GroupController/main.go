@@ -1,61 +1,48 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
+	"context"
 	"log"
 	"net/http"
+
+	"github.com/go-redis/redis/v7"
 )
 
-type AllocateRequest struct {
-	Id     string `json:"id"`
-	Target int    `json:"target"`
-}
+const ControllerBootChannel = "ControllerBootChannel.v1"
 
 func main() {
-	result := getHello("Starting")
-	log.Println(result)
+	log.Println("Init")
+	context := context.Background()
+	redisClient := getRedisClient()
 
+	controller, _ := NewController(redisClient, context)
+	go handleRedisMessages(redisClient, ControllerBootChannel, controller)
+	go initHttpServer(controller)
+	select {}
+}
+
+func getRedisClient() *redis.Client {
 	redisHost := "localhost:6379"
 	redisPasswd := ""
-	client := initRedis(redisHost, redisPasswd)
-	go monitorRedisKeys(client)
+	return initRedis(redisHost, redisPasswd)
+}
 
-	http.HandleFunc("/healthcheck", handleHealthcheck)
-	http.HandleFunc("/allocate", handleAllocate)
+func handleRedisMessages(redisClient *redis.Client, controllerChannel string, controller *Controller) {
+	pubSub := redisClient.Subscribe(controllerChannel)
+	for {
+		select {
+		case msg := <-pubSub.Channel():
+			log.Printf("Received nessage %v", msg.Payload)
+			controller.handleRedisMessage(msg.Payload)
+		case <-controller.ctx.Done():
+			log.Println("Controller no more active, Not processing REDIS message")
+			return
+		}
+	}
+}
+
+func initHttpServer(controller *Controller) {
+	http.HandleFunc("/healthcheck", controller.handleHealthcheck)
+	http.HandleFunc("/allocate", controller.handleAllocate)
 	http.ListenAndServe(":5001", nil)
-}
-
-func handleHealthcheck(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("Recived the request: %v", request.Method)
-	writer.Write([]byte("Okay"))
-}
-
-func handleAllocate(writer http.ResponseWriter, request *http.Request) {
-	log.Println("Recieved the request")
-	var allocateRequest AllocateRequest
-	err := json.NewDecoder(request.Body).Decode(&allocateRequest)
-	if err != nil {
-		log.Printf("Unexpected response while parsing the request %v", err)
-	}
-	result := fmt.Sprintf("%s acked with the target of %x", allocateRequest.Id, allocateRequest.Target)
-	writer.Write([]byte(result))
-}
-
-func getHello(name string) string {
-	return "Hello " + name
-}
-
-func getSampleRquest() *AllocateRequest {
-	return &AllocateRequest{
-		Id:     "suriya",
-		Target: 34,
-	}
-}
-
-func copyRequest(request *AllocateRequest) AllocateRequest {
-	return AllocateRequest{
-		Id:     request.Id,
-		Target: request.Target,
-	}
 }
