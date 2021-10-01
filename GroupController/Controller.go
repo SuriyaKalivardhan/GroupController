@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -42,22 +41,6 @@ func (c *Controller) handleRedisMessage(redisPayload string) {
 	}
 }
 
-func (c *Controller) handleHealthcheck(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("Recived the request: %v", request.Method)
-	writer.Write([]byte("Okay"))
-}
-
-func (c *Controller) handleAllocate(writer http.ResponseWriter, request *http.Request) {
-	log.Println("Recieved the request")
-	var allocateRequest AllocateRequest
-	err := json.NewDecoder(request.Body).Decode(&allocateRequest)
-	if err != nil {
-		log.Printf("Unexpected response while parsing the request %v", err)
-	}
-	result := fmt.Sprintf("%s acked with the target of %x", allocateRequest.Id, allocateRequest.Target)
-	writer.Write([]byte(result))
-}
-
 func (c *Controller) watchonWorkersListener() {
 	for {
 		select {
@@ -94,4 +77,62 @@ func (c *Controller) watchonWorkersListener() {
 			}
 		}
 	}
+}
+
+func (c *Controller) handleHealthcheck(writer http.ResponseWriter, request *http.Request) {
+	log.Printf("Recived the request: %v", request.Method)
+	writer.Write([]byte("Okay"))
+}
+
+func (c *Controller) handleAllocate(writer http.ResponseWriter, request *http.Request) {
+	log.Println("Recieved the request")
+	var allocateRequest AllocateRequest
+	err := json.NewDecoder(request.Body).Decode(&allocateRequest)
+	if err != nil {
+		log.Printf("Unexpected response while parsing the request %v", err)
+	}
+
+	result := "FAILURE"
+	if c.Allocate(&allocateRequest) {
+		result = "SUCCCESS"
+	}
+
+	writer.Write([]byte(result))
+}
+
+func (c *Controller) Allocate(request *AllocateRequest) bool {
+	var freeWorkers []*worker
+	var currentWorkers []*worker
+
+	for _, worker := range c.workers {
+		if worker.client == "" {
+			freeWorkers = append(freeWorkers, worker)
+		} else if worker.client == request.Id {
+			currentWorkers = append(currentWorkers, worker)
+		}
+	}
+
+	diff := min(request.Target-len(currentWorkers), len(freeWorkers))
+
+	if diff >= 0 {
+		newWorkers := freeWorkers[0:diff]
+		for _, worker := range newWorkers {
+			if worker.Register(request, c.redisClient) {
+				currentWorkers = append(currentWorkers, worker)
+			}
+		}
+		return len(currentWorkers) == request.Target
+
+	} else if diff < 0 {
+		removed := 0
+		removeWorkers := currentWorkers[0 : diff*-1]
+		for _, worker := range removeWorkers {
+			if worker.UnRegister(request, c.redisClient) {
+				removed++
+			}
+		}
+		return (len(currentWorkers) - removed) == request.Target
+	}
+
+	return true
 }

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
+
+	"github.com/go-redis/redis/v7"
 )
 
 type worker struct {
@@ -33,4 +36,32 @@ func (w *worker) Update(message *BootChannelMessage) {
 		log.Printf("Change in client from  %v to %v, reassigning", w.client, message.BindedClient)
 		w.client = message.BindedClient
 	}
+}
+
+func (w *worker) Register(request *AllocateRequest, redisClient *redis.Client) bool {
+	if w.client != "" {
+		log.Println("Unexpected allocation while this worker is assigned")
+		return false
+	}
+
+	clientsRedisFromWorker := initRedis(request.RedisHost, request.RedisPassword)
+	clientsRedisFromWorker.Publish(request.RegisterChannel, fmt.Sprintf("Publishing Register from %v targeting %v", w.id, request.Id))
+
+	redisClient.Publish(w.listenerChannel, fmt.Sprintf("Publishing Register from %v targeting %v", w.id, request.Id))
+	w.client = request.Id
+	return true
+}
+
+func (w *worker) UnRegister(request *AllocateRequest, redisClient *redis.Client) bool {
+	if w.client != request.Id {
+		log.Println("Unexpected allocation while this worker is assigned")
+		return false
+	}
+
+	clientsRedisFromWorker := initRedis(request.RedisHost, request.RedisPassword)
+	clientsRedisFromWorker.Publish(request.RegisterChannel, fmt.Sprintf("Publishing UnRegister from %v targeting %v", w.id, request.Id))
+	w.client = ""
+
+	redisClient.Publish(w.listenerChannel, fmt.Sprintf("Publishing UnRegister from %v targeting %v", w.id, request.Id))
+	return true
 }
