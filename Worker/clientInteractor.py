@@ -6,11 +6,13 @@ class ClientInteractor(threading.Thread):
     i=777
     def __init__(self, val) -> None:
         super().__init__()
-        i= val
-        print ("Initializnig new Client from ", i)
+        self.i= val
+        print ("Initializnig new Client from ", self.i)
 
-    def run(self):
+    def run(self, prefix) -> int:
         while(True):
-            print ("Hello ",self.i)
+            print (prefix, " Hello ",self.i)
             self.i = self.i + 1
-            time.sleep(5)
+            time.sleep(1)
+            if self.i%20==0:
+                return self.i

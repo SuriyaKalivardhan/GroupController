@@ -3,7 +3,7 @@ import time
 
 from clientInteractor import ClientInteractor
 
-class ControllreInteractor(threading.Thread):
+class ControllerInteractor(threading.Thread):
     i=10
     client=None
     def __init__(self, inp) -> None:
@@ -17,4 +17,3 @@ class ControllreInteractor(threading.Thread):
             self.i = self.i + 1
             if self.client is None and (self.i % 10== 0):
                 self.client = ClientInteractor(self.i)
-                self.client.start()
