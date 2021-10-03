@@ -1,14 +1,19 @@
 from clientInteractor import ClientInteractor
 from controllerInteractor import ControllerInteractor
 import time
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s',level=logging.INFO)
 
 def main():
-    ctrInteractor = ControllerInteractor(123)
+    logging.info("Init")
+    ctrInteractor = ControllerInteractor()
     ctrInteractor.start()
     while ctrInteractor.client is None:
         time.sleep(1)
+    logging.info("Client controller initialized")
     cliInteractor = ctrInteractor.client
-    print(cliInteractor.run("Main Prefif"))
+    logging.INFO("Main got result from Client controller %s", cliInteractor.run("Main Prefif"))
 
 if __name__ == "__main__":
     main()

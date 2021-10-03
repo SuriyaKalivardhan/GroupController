@@ -1,5 +1,6 @@
 import threading
 import time
+import logging
 
 
 class ClientInteractor(threading.Thread):
@@ -7,11 +8,11 @@ class ClientInteractor(threading.Thread):
     def __init__(self, val) -> None:
         super().__init__()
         self.i= val
-        print ("Initializnig new Client from ", self.i)
+        logging.info("Initializnig new Client from %d", self.i)
 
     def run(self, prefix) -> int:
         while(True):
-            print (prefix, " Hello ",self.i)
+            logging.info("%s Hello %d", prefix, self.i)
             self.i = self.i + 1
             time.sleep(1)
             if self.i%20==0:

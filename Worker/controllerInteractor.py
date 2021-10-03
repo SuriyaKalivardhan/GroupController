@@ -1,19 +1,33 @@
 import threading
 import time
+import logging
+import redis_utils
+import random
 
 from clientInteractor import ClientInteractor
 
 class ControllerInteractor(threading.Thread):
-    i=10
     client=None
-    def __init__(self, inp) -> None:
+    redisClient=None
+    host="localhost"
+    port=6379
+    passwd=""
+    redisClient=None
+    pubsub=None
+    id=None
+    listenerChannel="None"
+    controllerBootChannel = "ControllerBootChannel.v1"
+
+    def __init__(self) -> None:
+        id = random.randint(0,100)
         super().__init__()
-        self.i=inp
+        self.redisClient = redis_utils.connect_redis(self.host, self.port, self.passwd)
+        self.pubsub = self.redisClient.pubsub()
+        self.listenerChannel = format(id)+".listen"
+        self.pubsub.subscribe(self.listenerChannel)
+        self.redisClient.publish(self.controllerBootChannel, "ullala")
 
     def run(self):
         while(True):
-            print ("Current i ", self.i)
-            time.sleep(1)
-            self.i = self.i + 1
-            if self.client is None and (self.i % 10== 0):
-                self.client = ClientInteractor(self.i)
+            msg = self.pubsub.get_message(timeout=None)
+            logging.info(msg)
