@@ -9,9 +9,9 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-func NewWorkerInteractor(client *redis.Client, rootContext context.Context) (*WorkerInteractor, context.CancelFunc) {
+func NewWorkerInteractor(client *redis.Client, rootContext context.Context, id string) (*WorkerInteractor, context.CancelFunc) {
 	controllerContext, cancelFunc := context.WithCancel(rootContext)
-	w := &WorkerInteractor{client, controllerContext, make(map[string]*worker), NewCorrector(client)}
+	w := &WorkerInteractor{client, controllerContext, make(map[string]*worker), NewCorrector(client, id), id}
 	go w.workerWatcher()
 	return w, cancelFunc
 }
@@ -21,6 +21,7 @@ type WorkerInteractor struct {
 	ctx         context.Context
 	workers     map[string]*worker
 	corrector   *Corrector
+	id          string
 }
 
 func (w *WorkerInteractor) handleRedisMessage(redisPayload string) {

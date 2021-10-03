@@ -11,12 +11,14 @@ class ClientInteractor(threading.Thread):
     redisClient=None
     pubsub=None
     id=None
+    clientId=None
     listenerChannel=None
     clientRegisterChannel = None
 
-    def __init__(self, id, host, port, passwd, registerChannel) -> None:
+    def __init__(self, id, host, port, passwd, registerChannel, clientId) -> None:
         super().__init__()
         self.id = id
+        self.clientId = clientId
         self.redisClient = redis_utils.connect_redis(host, port, passwd)
         self.pubsub = self.redisClient.pubsub()
         self.listenerChannel = format(self.id)+".model.listen"

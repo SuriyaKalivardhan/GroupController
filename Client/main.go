@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -10,11 +13,13 @@ import (
 const ControllerBootChannel = "ContosoController.v1"
 
 func main() {
-	log.Println("Init")
+	rand.Seed(time.Now().UnixNano())
+	id := fmt.Sprintf("Client--%d", rand.Intn(10000))
+	log.Printf("Init %s", id)
 	context := context.Background()
 	redisClient := getRedisClient()
 
-	controller, _ := NewWorkerInteractor(redisClient, context)
+	controller, _ := NewWorkerInteractor(redisClient, context, id)
 	go handleRedisMessages(redisClient, ControllerBootChannel, controller)
 	select {}
 }
