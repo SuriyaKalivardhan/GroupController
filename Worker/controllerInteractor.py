@@ -6,6 +6,7 @@ from redis import client
 import redis_utils
 import json
 import random
+import os
 
 from clientInteractor import ClientInteractor
 
@@ -48,4 +49,4 @@ class ControllerInteractor(threading.Thread):
                 if self.client is not None:
                     self.client.UnRegister()
                 logging.info("Shutting down controllrer inteactor.")
-                return
+                os._exit(3)

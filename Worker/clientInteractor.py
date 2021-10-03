@@ -1,3 +1,4 @@
+import os
 import threading
 import time
 import logging
@@ -11,11 +12,7 @@ class ClientInteractor(threading.Thread):
     pubsub=None
     id=None
     listenerChannel=None
-    modelRegisterchannel = None
-    done=False
-
-    def __init__():
-        super.__init__()
+    clientRegisterChannel = None
 
     def __init__(self, id, host, port, passwd, registerChannel) -> None:
         super().__init__()
@@ -29,12 +26,13 @@ class ClientInteractor(threading.Thread):
             "listenerChannel": self.listenerChannel,
             "method":"Register"
         }
-        self.modelRegisterchannel = registerChannel
-        self.redisClient.publish(self.modelRegisterchannel, json.dumps(request))
+        self.clientRegisterChannel = registerChannel
+        self.redisClient.publish(self.clientRegisterChannel, json.dumps(request))
         logging.info("Initializnig new Client from %d", self.id)
+        threading.Thread(target=self.monitor_client, args=(), daemon=True).start()
 
     def run(self):
-        while(self.done == False):
+        while(True):
             msg = self.pubsub.get_message(timeout=3)
             if msg == None or msg["type"] != "message":
                 continue
@@ -44,7 +42,7 @@ class ClientInteractor(threading.Thread):
     def debug(self) -> str:
         return "Currently listening to  " + self.listenerChannel
 
-    def UnRegister(self):        
+    def UnRegister(self):
         request = {
             "id": format(self.id),
             "listenerChannel": self.listenerChannel,
@@ -52,4 +50,20 @@ class ClientInteractor(threading.Thread):
         }
         self.redisClient.publish(self.modelRegisterchannel, json.dumps(request))
         logging.info("Shutting down Client...")
-        self.done = True
+        os._exit(3)
+    
+    def monitor_client(self):
+        while True:
+            clientSubs = self.redisClient.pubsub_numsub(self.clientRegisterChannel)
+            clientListening = False
+
+            for subsribers in clientSubs:
+                if subsribers[0].decode('UTF-8') == self.clientRegisterChannel:
+                    if subsribers[1] > 0:
+                        clientListening = True
+
+            if clientListening == False:
+                logging.info("Crashing since no active clients to their channel")
+                os._exit(3)
+
+            time.sleep(1)
