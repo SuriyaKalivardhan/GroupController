@@ -8,49 +8,48 @@ import (
 )
 
 type worker struct {
-	id              string
+	workerId        string
 	listenerChannel string
-	client          string
+	controllerId    string
 	close           func()
 }
 
-func NewWorker(message BootChannelMessage, close func()) *worker {
+func NewWorker(message WorkerMessage, close func()) *worker {
 	return &worker{
-		id:              message.Id,
+		workerId:        message.WorkerId,
 		listenerChannel: message.ListenerChannel,
-		client:          message.BindedClient,
+		controllerId:    message.Controller,
 		close:           close,
 	}
 }
 
-func (w *worker) Update(message *BootChannelMessage) {
-	if message.Id != w.id {
-		log.Printf("Mismatch boot assignment %v for %v", message.Id, w.id)
+func (w *worker) Update(message *WorkerMessage) {
+	if message.WorkerId != w.workerId {
+		log.Printf("Mismatch boot assignment %v for %v", message.WorkerId, w.workerId)
 		return
 	}
 	if message.ListenerChannel != w.listenerChannel {
-		log.Printf("Mismatch boot assignment %v for %v", message.Id, w.id)
+		log.Printf("Mismatch boot assignment %v for %v", message.WorkerId, w.workerId)
 		w.listenerChannel = message.ListenerChannel
 	}
-	if message.BindedClient != w.client {
-		log.Printf("Change in client from  %v to %v, reassigning", w.client, message.BindedClient)
-		w.client = message.BindedClient
+	if message.Controller != w.controllerId {
+		log.Printf("Change in client from  %v to %v, reassigning", message.Controller, w.controllerId)
+		w.controllerId = message.Controller
 	}
 }
 
 func (w *worker) Register(request *AllocateRequest, redisClient *redis.Client) bool {
-	if w.client != "" {
+	if w.controllerId != "" {
 		log.Println("Unexpected allocation while this worker is assigned")
 		return false
 	}
 
-	controlMessage := GroupControllerControlMessage{
-		Method:          "Register",
-		ClientId:        request.Id,
-		RedisHost:       request.RedisHost,
-		RedisPort:       request.RedisPort,
-		RedisPassword:   request.RedisPassword,
-		RegisterChannel: request.RegisterChannel,
+	controlMessage := ControlMessage{
+		Method:        "Bind",
+		ControllerId:  request.ControllerId,
+		RedisAddress:  request.RedisAddress,
+		RedisPassword: request.RedisPassword,
+		RedisUseSSL:   request.RedisUseSSL,
 	}
 	redisMessage, err := json.Marshal(&controlMessage)
 
@@ -63,23 +62,22 @@ func (w *worker) Register(request *AllocateRequest, redisClient *redis.Client) b
 	// clientsRedisFromWorker.Publish(request.RegisterChannel, redisMessage)
 
 	redisClient.Publish(w.listenerChannel, redisMessage)
-	w.client = request.Id
+	w.controllerId = request.ControllerId
 	return true
 }
 
 func (w *worker) UnRegister(request *AllocateRequest, redisClient *redis.Client) bool {
-	if w.client != request.Id {
+	if w.controllerId != request.ControllerId {
 		log.Println("Unexpected allocation while this worker is assigned")
 		return false
 	}
 
-	controlMessage := GroupControllerControlMessage{
-		Method:          "UnRegister",
-		ClientId:        request.Id,
-		RedisHost:       request.RedisHost,
-		RedisPort:       request.RedisPort,
-		RedisPassword:   request.RedisPassword,
-		RegisterChannel: request.RegisterChannel,
+	controlMessage := ControlMessage{
+		Method:        "UnBind",
+		ControllerId:  request.ControllerId,
+		RedisAddress:  request.RedisAddress,
+		RedisPassword: request.RedisPassword,
+		RedisUseSSL:   request.RedisUseSSL,
 	}
 
 	redisMessage, err := json.Marshal(&controlMessage)

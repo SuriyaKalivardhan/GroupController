@@ -24,20 +24,20 @@ type Controller struct {
 }
 
 func (c *Controller) handleRedisMessage(redisPayload string) {
-	var message BootChannelMessage
+	var message WorkerMessage
 	err := json.Unmarshal([]byte(redisPayload), &message)
 	if err != nil {
 		log.Printf("Unexpected REDIS error message %v", err)
 		return
 	}
 
-	if c.workers[message.Id] != nil {
-		c.workers[message.Id].Update(&message)
+	if c.workers[message.WorkerId] != nil {
+		c.workers[message.WorkerId].Update(&message)
 	} else {
-		log.Printf("Adding new worker %v", message.Id)
+		log.Printf("Adding new worker %v", message.WorkerId)
 		_, cancel := context.WithCancel(c.ctx)
 		worker := NewWorker(message, cancel)
-		c.workers[worker.id] = worker
+		c.workers[worker.workerId] = worker
 	}
 }
 
@@ -70,8 +70,8 @@ func (c *Controller) watchonWorkersListener() {
 				}
 
 				if count == 0 {
-					log.Printf("No subsribre for %v, removing %s", channel, localwokers[channel].id)
-					delete(c.workers, localwokers[channel].id)
+					log.Printf("No subsribre for %v, removing %s", channel, localwokers[channel].workerId)
+					delete(c.workers, localwokers[channel].workerId)
 					localwokers[channel].close()
 				}
 			}
@@ -105,27 +105,27 @@ func (c *Controller) Allocate(request *AllocateRequest) bool {
 	var currentWorkers []*worker
 
 	for _, worker := range c.workers {
-		if worker.client == "" {
+		if worker.controllerId == "" {
 			freeWorkers = append(freeWorkers, worker)
-		} else if worker.client == request.Id {
+		} else if worker.controllerId == request.ControllerId {
 			currentWorkers = append(currentWorkers, worker)
 		}
 	}
 
-	diff := min(request.Target-len(currentWorkers), len(freeWorkers))
+	diff := min(request.DesiredWorkers-len(currentWorkers), len(freeWorkers))
 
 	if diff >= 0 {
-		log.Printf("Allocating %v of %v for %v", diff, request.Target, request.Id)
+		log.Printf("Allocating %v of %v for %v", diff, request.DesiredWorkers, request.ControllerId)
 		newWorkers := freeWorkers[0:diff]
 		for _, worker := range newWorkers {
 			if worker.Register(request, c.redisClient) {
 				currentWorkers = append(currentWorkers, worker)
 			}
 		}
-		return len(currentWorkers) == request.Target
+		return len(currentWorkers) == request.DesiredWorkers
 
 	} else if diff < 0 {
-		log.Printf("DeAllocating %v of %v for %v", diff, request.Target, request.Id)
+		log.Printf("DeAllocating %v of %v for %v", diff, request.DesiredWorkers, request.ControllerId)
 		removed := 0
 		removeWorkers := currentWorkers[0 : diff*-1]
 		for _, worker := range removeWorkers {
@@ -133,7 +133,7 @@ func (c *Controller) Allocate(request *AllocateRequest) bool {
 				removed++
 			}
 		}
-		return (len(currentWorkers) - removed) == request.Target
+		return (len(currentWorkers) - removed) == request.DesiredWorkers
 	}
 
 	return true
