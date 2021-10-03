@@ -50,7 +50,7 @@ class ClientInteractor(threading.Thread):
             "listenerChannel": self.listenerChannel,
             "method": "Shutdown"
         }
-        self.redisClient.publish(self.modelRegisterchannel, json.dumps(request))
+        self.redisClient.publish(self.clientRegisterChannel, json.dumps(request))
         logging.info("Shutting down Client...")
         os._exit(3)
     
