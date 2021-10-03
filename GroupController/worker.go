@@ -48,6 +48,7 @@ func (w *worker) Register(request *AllocateRequest, redisClient *redis.Client) b
 		Method:          "Register",
 		ClientId:        request.Id,
 		RedisHost:       request.RedisHost,
+		RedisPort:       request.RedisPort,
 		RedisPassword:   request.RedisPassword,
 		RegisterChannel: request.RegisterChannel,
 	}
@@ -76,6 +77,7 @@ func (w *worker) UnRegister(request *AllocateRequest, redisClient *redis.Client)
 		Method:          "UnRegister",
 		ClientId:        request.Id,
 		RedisHost:       request.RedisHost,
+		RedisPort:       request.RedisPort,
 		RedisPassword:   request.RedisPassword,
 		RegisterChannel: request.RegisterChannel,
 	}

@@ -53,7 +53,8 @@ func SubmitTarget(target int) {
 	request := AllocateRequest{
 		Id:              "ContosoController",
 		Target:          target,
-		RedisHost:       "localhost:6388",
+		RedisHost:       "localhost",
+		RedisPort:       6388,
 		RedisPassword:   "",
 		RegisterChannel: ControllerBootChannel,
 	}

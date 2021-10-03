@@ -12,8 +12,8 @@ def main():
     while ctrInteractor.client is None:
         time.sleep(1)
     logging.info("Client controller initialized")
-    cliInteractor = ctrInteractor.client
-    logging.INFO("Main got result from Client controller %s", cliInteractor.run("Main Prefif"))
+    # cliInteractor = ctrInteractor.client
+    #logging.INFO("Main got result from Client controller %s", cliInteractor.debug())
 
 if __name__ == "__main__":
     main()

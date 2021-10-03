@@ -32,7 +32,11 @@ func (w *WorkerInteractor) handleRedisMessage(redisPayload string) {
 	}
 
 	if w.workers[message.Id] != nil {
-		w.workers[message.Id].Update(&message)
+		if !w.workers[message.Id].Update(&message) {
+			w.workers[message.Id].close()
+			delete(w.workers, message.Id)
+			log.Printf("Shutting down %v on receive from worker", message.Id)
+		}
 	} else {
 		log.Printf("Adding new worker %v", message.Id)
 		_, cancel := context.WithCancel(w.ctx)
