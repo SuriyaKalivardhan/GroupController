@@ -45,7 +45,7 @@ func (c *Controller) watchonWorkersListener() {
 	for {
 		select {
 		case <-c.ctx.Done():
-			log.Println("context closed for Controller in WatchWorkerListern, returning")
+			log.Println("context closed for Manager in WatchWorkerListern, returning")
 			return
 		case <-time.After(5 * time.Second):
 			var channels []string
@@ -70,7 +70,7 @@ func (c *Controller) watchonWorkersListener() {
 				}
 
 				if count == 0 {
-					log.Printf("No subsribre for %v, removing %s", channel, localwokers[channel].workerId)
+					log.Printf("No subsriber for %v, removing %s", channel, localwokers[channel].workerId)
 					delete(c.workers, localwokers[channel].workerId)
 					localwokers[channel].close()
 				}
@@ -81,7 +81,7 @@ func (c *Controller) watchonWorkersListener() {
 
 func (c *Controller) handleHealthcheck(writer http.ResponseWriter, request *http.Request) {
 	log.Printf("Received the healthcheck request: %v", request.Method)
-	writer.Write([]byte("Okay"))
+	writer.Write([]byte("Ok\n"))
 }
 
 func (c *Controller) handleAllocate(writer http.ResponseWriter, request *http.Request) {
@@ -114,7 +114,7 @@ func (c *Controller) Allocate(request *AllocateRequest) bool {
 
 	diff := min(request.DesiredWorkers-len(currentWorkers), len(freeWorkers))
 
-	if diff >= 0 {
+	if diff > 0 {
 		log.Printf("Allocating %v of %v for %v", diff, request.DesiredWorkers, request.ControllerId)
 		newWorkers := freeWorkers[0:diff]
 		for _, worker := range newWorkers {

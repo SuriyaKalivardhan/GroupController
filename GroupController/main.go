@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -22,8 +23,18 @@ func main() {
 }
 
 func getRedisClient() *redis.Client {
-	redisHost := "redis-poolmanager-0.redis.cache.windows.net:6380"
-	redisPasswd := "KEfR4SJAdSokMnp1Hm1G5jZsLEc+WN+PeRCjYwDD9r0="
+
+	var redisHost, redisPasswd string
+	if redisHost = os.Getenv("AZUREML_OAI_REDIS_HOST"); redisHost == "" {
+		log.Println("redisHost not present in env variable setting to localhost")
+		redisHost = "localhost:6379"
+	}
+
+	if redisPasswd = os.Getenv("AZUREML_OAI_REDIS_KEY"); redisPasswd == "" {
+		log.Println("redisPassWord not present in env variable")
+		redisPasswd = ""
+	}
+
 	return initRedis(redisHost, redisPasswd)
 }
 
@@ -32,7 +43,7 @@ func handleRedisMessages(redisClient *redis.Client, controllerChannel string, co
 	for {
 		select {
 		case msg := <-pubSub.Channel():
-			log.Printf("Received nessage %v", msg.Payload)
+			log.Printf("Received message %v", msg.Payload)
 			controller.handleRedisMessage(msg.Payload)
 		case <-controller.ctx.Done():
 			log.Println("Manager no more active, Not processing REDIS message")
