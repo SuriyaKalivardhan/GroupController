@@ -70,7 +70,7 @@ func (c *Controller) watchonWorkersListener() {
 				}
 
 				if count == 0 {
-					log.Printf("No subsriber for %v, removing %s", channel, localwokers[channel].workerId)
+					log.Printf("InActive %v, EVICTING %s", channel, localwokers[channel].workerId)
 					delete(c.workers, localwokers[channel].workerId)
 					localwokers[channel].close()
 				}
@@ -80,12 +80,11 @@ func (c *Controller) watchonWorkersListener() {
 }
 
 func (c *Controller) handleHealthcheck(writer http.ResponseWriter, request *http.Request) {
-	log.Printf("Received the healthcheck request: %v", request.Method)
+	log.Printf("ACK Healthcheck")
 	writer.Write([]byte("Ok\n"))
 }
 
 func (c *Controller) handleAllocate(writer http.ResponseWriter, request *http.Request) {
-	log.Println("Recieved the Allocate request")
 	var allocateRequest AllocateRequest
 	err := json.NewDecoder(request.Body).Decode(&allocateRequest)
 	if err != nil {
@@ -95,8 +94,9 @@ func (c *Controller) handleAllocate(writer http.ResponseWriter, request *http.Re
 	result := "FAILURE"
 	if c.Allocate(&allocateRequest) {
 		result = "SUCCCESS"
+	} else {
+		writer.WriteHeader(http.StatusConflict)
 	}
-
 	writer.Write([]byte(result))
 }
 
@@ -115,7 +115,7 @@ func (c *Controller) Allocate(request *AllocateRequest) bool {
 	diff := min(request.DesiredWorkers-len(currentWorkers), len(freeWorkers))
 
 	if diff > 0 {
-		log.Printf("Allocating %v of %v for %v", diff, request.DesiredWorkers, request.ControllerId)
+		log.Printf("ALLOCATING %v of %v for %v", diff, request.DesiredWorkers, request.ControllerId)
 		newWorkers := freeWorkers[0:diff]
 		for _, worker := range newWorkers {
 			if worker.Register(request, c.redisClient) {
@@ -125,9 +125,10 @@ func (c *Controller) Allocate(request *AllocateRequest) bool {
 		return len(currentWorkers) == request.DesiredWorkers
 
 	} else if diff < 0 {
-		log.Printf("DeAllocating %v of %v for %v", diff, request.DesiredWorkers, request.ControllerId)
+		diff = diff * -1
+		log.Printf("DE-ALLOCATING %v of %v for %v", diff, len(currentWorkers), request.ControllerId)
 		removed := 0
-		removeWorkers := currentWorkers[0 : diff*-1]
+		removeWorkers := currentWorkers[0:diff]
 		for _, worker := range removeWorkers {
 			if worker.UnRegister(request, c.redisClient) {
 				removed++

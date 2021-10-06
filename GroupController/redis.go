@@ -21,7 +21,7 @@ func initRedis(host string, passwd string) *redis.Client {
 
 	client := redis.NewClient(&options)
 	if _, err := client.Ping().Result(); err != nil {
-		log.Printf("Redis Init exceptoin retrying %v", err)
+		log.Printf("Redis Init exception retrying %v", err)
 		time.Sleep(1 * time.Second)
 		return initRedis(host, passwd) //UGLY Recursion, except stack overflow crash and container restarts
 	}
