@@ -91,7 +91,7 @@ func (c *Controller) handleAllocate(writer http.ResponseWriter, request *http.Re
 		log.Printf("Unexpected response while parsing the request %v", err)
 	}
 
-	result := "FAILURE"
+	result := "CONFLICT"
 	if c.Allocate(&allocateRequest) {
 		result = "SUCCCESS"
 	} else {
@@ -137,5 +137,5 @@ func (c *Controller) Allocate(request *AllocateRequest) bool {
 		return (len(currentWorkers) - removed) == request.DesiredWorkers
 	}
 
-	return true
+	return request.DesiredWorkers == len(currentWorkers)
 }
