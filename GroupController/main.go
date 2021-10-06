@@ -43,7 +43,7 @@ func handleRedisMessages(redisClient *redis.Client, controllerChannel string, co
 	for {
 		select {
 		case msg := <-pubSub.Channel():
-			log.Printf("RCV %v", msg.Payload)
+			//log.Printf("RCV %v", msg.Payload)
 			controller.handleRedisMessage(msg.Payload)
 		case <-controller.ctx.Done():
 			log.Println("Manager no more active, Not processing REDIS message")
