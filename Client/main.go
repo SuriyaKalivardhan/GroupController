@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"math/rand"
@@ -18,6 +19,12 @@ func main() {
 	log.Printf("Init %s", id)
 	context := context.Background()
 	redisClient := getRedisClient()
+	log.Printf("REDIS a-> %v", redisClient.Options().Addr)
+	useSSL := false
+	if redisClient.Options().TLSConfig != nil && redisClient.Options().TLSConfig.MinVersion >= tls.VersionTLS10 {
+		useSSL = true
+	}
+	log.Printf("REDIS ssl-> %v", useSSL)
 
 	controller, _ := NewWorkerInteractor(redisClient, context, id)
 	go handleRedisMessages(redisClient, ControllerBootChannel, controller)
