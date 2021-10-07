@@ -42,18 +42,23 @@ func (c *Controller) handleRedisMessage(redisPayload string) {
 }
 
 func (c *Controller) watchonWorkersListener() {
+	dw := 2
+	lastLogTime := time.Now()
 	for {
 		select {
 		case <-c.ctx.Done():
 			log.Println("context closed for Manager in WatchWorkerListern, returning")
 			return
-		case <-time.After(5 * time.Second):
+		case <-time.After(50 * time.Millisecond):
 			var channels []string
 			localwokers := make(map[string]*worker, len(c.workers))
 			for _, worker := range c.workers {
 				channels = append(channels, worker.listenerChannel)
 				localwokers[worker.listenerChannel] = worker
 			}
+
+			assigned := 0
+			available := 0
 
 			if len(channels) == 0 {
 				continue
@@ -73,7 +78,21 @@ func (c *Controller) watchonWorkersListener() {
 					log.Printf("InActive %v, EVICTING %s", channel, localwokers[channel].workerId)
 					delete(c.workers, localwokers[channel].workerId)
 					localwokers[channel].close()
+				} else {
+					if localwokers[channel] != nil {
+						assigned++
+					} else {
+						available++
+					}
 				}
+			}
+
+			if time.Since(lastLogTime) > (30 * time.Second) {
+				log.Printf("DESIRED %v ASSIGNED %v AVAILABLE %v LOADING %v", dw, assigned, available, dw-(assigned+available))
+				lastLogTime = time.Now()
+			}
+			if available == 0 {
+				log.Println("[Autoscale] Triggering Scale due to lack model workers")
 			}
 		}
 	}
